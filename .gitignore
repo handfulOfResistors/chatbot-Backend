@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# OS fajlovi
+.DS_Store
+Thumbs.db
+
+# Log fajlovi
+*.log
+
+# Environment variables
+.env
+.env.*
+
+# Test output
+htmlcov/
+.tox/
+.nox/
+coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+test-results/
+
+# Build
+build/
+dist/
+*.egg
+*.whl
+
+# Migrations (ako koristiš Alembic)
+migrations/
