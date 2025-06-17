@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 import openai
+import certifi
+from pymongo import MongoClient
 from openai import OpenAI
 from datetime import datetime
 from dotenv import load_dotenv
@@ -33,7 +35,8 @@ openai_client = OpenAI(
 mongodb_uri = os.getenv("MONGODB_URI")
 
 #client = MongoClient(os.getenv("MONGODB_URI"))
-client = MongoClient(mongodb_uri)
+client = MongoClient(mongodb_uri, tlsCAFile = certifi.where())
+
 db = client.get_database("chatbot")
 messages_collection = db.messages
 
