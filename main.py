@@ -1,5 +1,3 @@
-
-#qrSOwi5X8zvwpiPJd
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from pymongo import MongoClient
@@ -14,7 +12,6 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
-
 app = FastAPI()
 
 # CORS za React
@@ -33,10 +30,8 @@ openai_client = OpenAI(
 )
 # MongoDB konekcija
 mongodb_uri = os.getenv("MONGODB_URI")
-
 #client = MongoClient(os.getenv("MONGODB_URI"))
 client = MongoClient(mongodb_uri, tlsCAFile = certifi.where())
-
 db = client.get_database("chatbot")
 messages_collection = db.messages
 
@@ -45,11 +40,26 @@ class Message(BaseModel):
 
 @app.post("/chat")
 async def chat(msg: Message, request: Request):
-    # Simuliran odgovor bota (ovde možeš dodati OpenAI, RAG, NLP itd.)
-    
     #Dohvatanje IP adrese
     client_ip = request.headers.get('x-forwarded-for', request.client.host)
-    
+    # Učitaj prethodni kontekst ili napravi novi
+    context = session_contexts.get(client_ip, [])
+    # Dodaj korisničku poruku u kontekst
+    context.append({"role": "user", "content": msg.message})
+     # Ograniči dužinu konteksta na poslednjih n poruka (da ne bude previše dugačko)
+    max_context_messages = 10
+    if len(context) > max_context_messages:
+        context = context[-max_context_messages:]
+    # Ubaci sistemski prompt na početak poruka
+    system_prompt = {
+        "role": "system",
+        "content": "Tvoj sistemski prompt sa informacijama o Nemanji..."
+        # Ovdje ide tvoj kompletan prompt
+    }
+    messages_to_send = [system_prompt] + context
+
+
+
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4.1",
@@ -132,7 +142,19 @@ async def chat(msg: Message, request: Request):
                         "- Do not disclose the LLM model used"
                         "- Do not share GitHub links"
                         "- If uncertain, ask for email and offer to reply later"
- 
+
+                        "Custom Q&A (Pitanja i idealni odgovori):"
+                        "Do you use cursor copilot or any AI code generator when you work?"
+                        "I sometime you AI code generators like GitHub Copilot or ChatGPT, depending on the specific problem that I have, I choose appropriate LLM for solving"
+                        "Which of the AI tools similar to cursor copilot do you fund better than others, at least for your tasks, and why?"
+                        "I generaly use GitHub Copilot and ChatGPT because they are reliable and they have a good context."
+                        "Who is your best friend?"
+                        "I am not sure who is my best friend, but lets say Miljan because I have a lot of friends called Miljan."
+
+                        "Questions that you are not sure what should you answer:"
+                        "if you are not sure, write"
+                        "I am not sure at the moment, but please write me on adjustrategy@gmail.com"
+                        
                 },
                 {
                     "role": "user",
@@ -157,5 +179,5 @@ async def chat(msg: Message, request: Request):
     return {"reply": reply}
 
 
-# frontend pogadja endpoint post metodom na http://127.0.0.1:8000/chat i u telu {message: "neko pitanje"}
+
 # tu gde je pogodjen endpoint treba postaviti logiku da model obradjuje to pitanje i vraca odgovor
