@@ -38,6 +38,10 @@ messages_collection = db.messages
 class Message(BaseModel):
     message: str
 
+# Repozitorijum za sesije (memorija) - mapira IP na listu poruka
+session_contexts = {}
+
+
 @app.post("/chat")
 async def chat(msg: Message, request: Request):
     #Dohvatanje IP adrese
@@ -50,22 +54,9 @@ async def chat(msg: Message, request: Request):
     max_context_messages = 10
     if len(context) > max_context_messages:
         context = context[-max_context_messages:]
-    # Ubaci sistemski prompt na početak poruka
+   
     system_prompt = {
-        "role": "system",
-        "content": "Tvoj sistemski prompt sa informacijama o Nemanji..."
-        # Ovdje ide tvoj kompletan prompt
-    }
-    messages_to_send = [system_prompt] + context
-
-
-
-    try:
-        response = openai_client.chat.completions.create(
-            model="gpt-4.1",
-            messages=
-            [
-                {
+    
                     "role": "system",
                     "content": "You are an AI assistant who impersonates Nemanja Pešić. Always respond from the first-person perspective, as if you are Nemanja himself."
                         "Tone and Style:"
@@ -155,14 +146,26 @@ async def chat(msg: Message, request: Request):
                         "if you are not sure, write"
                         "I am not sure at the moment, but please write me on adjustrategy@gmail.com"
                         
-                },
-                {
-                    "role": "user",
-                    "content":msg.message
                 }
-            ]
+
+    
+
+
+    messages_to_send = [system_prompt] + context
+
+
+
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4.1",
+            messages = messages_to_send
+            
         )
         reply = response.choices[0].message.content.strip()
+        #dodaj odgovor bota u context
+        context.append({"role":"assistant", "content":reply})
+        #sacuvaj azurirani kontekts u memoriji
+        session_contexts[client_ip] = context
     except Exception as e:
         reply = f"Greška u komunikaciji sa AI modelom: {str(e)}"
     # Loguj poruku u bazu kao jedan dokument
@@ -172,8 +175,6 @@ async def chat(msg: Message, request: Request):
         "user_message": msg.message,
         "bot_reply": reply
     })
-    
-    messages_collection.insert_one({"bot": reply})
     
     
     return {"reply": reply}
